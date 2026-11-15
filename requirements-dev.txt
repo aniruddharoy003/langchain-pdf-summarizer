@@ -1,0 +1,4 @@
+# Development-only tooling (not needed to run the app)
+-r requirements.txt
+
+pytest==9.2.0
