@@ -29,7 +29,7 @@ PDF → extract → clean → chunk by tokens
 - **Exports** — final summary as `.txt`, per-chunk statistics as `.csv`
 - **No re-billing** — results are cached per file *and* per setting in session state
 - **Friendly errors** — rate limits, bad keys, timeouts and missing models become actionable messages
-- **37 offline tests** — the whole pipeline is testable without an API key
+- **38 offline tests** — the whole pipeline is testable without an API key
 
 ## Requirements
 
@@ -147,7 +147,7 @@ add an entry to `STYLES` and to `SUMMARY_TYPES` in `config.py` — the sidebar p
 
 ```bash
 pip install -r requirements-dev.txt
-pytest                 # 37 tests, no network
+pytest                 # 38 tests, no network
 ruff check .           # lint
 ruff format --check .  # formatting
 ```
