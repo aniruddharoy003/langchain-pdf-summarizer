@@ -50,8 +50,7 @@ def _template(human: str) -> ChatPromptTemplate:
 
 
 CHUNK_SUMMARY = _template(
-    "Summarize the section below in this style:\n{style}\n\n"
-    "<section>\n{text}\n</section>"
+    "Summarize the section below in this style:\n{style}\n\n<section>\n{text}\n</section>"
 )
 
 COMBINE = _template(

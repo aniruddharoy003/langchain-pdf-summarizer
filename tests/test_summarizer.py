@@ -28,14 +28,16 @@ def test_message_text_plain_string() -> None:
 
 
 def test_message_text_block_list() -> None:
-    message = AIMessage(content=[{"type": "text", "text": "part one"},
-                                 {"type": "text", "text": "part two"}])
+    message = AIMessage(
+        content=[{"type": "text", "text": "part one"}, {"type": "text", "text": "part two"}]
+    )
     assert message_text(message) == "part one\npart two"
 
 
 def test_message_text_ignores_non_text_blocks() -> None:
-    message = AIMessage(content=[{"type": "thinking", "thinking": "hmm"},
-                                 {"type": "text", "text": "answer"}])
+    message = AIMessage(
+        content=[{"type": "thinking", "thinking": "hmm"}, {"type": "text", "text": "answer"}]
+    )
     assert message_text(message) == "answer"
 
 

@@ -35,7 +35,9 @@ def summary_dataframe(result: SummaryResult) -> pd.DataFrame:
     """One row per chunk with sizes, compression ratio and status."""
     rows = []
     for chunk in result.chunk_summaries:
-        ratio = round(chunk.summary_chars / chunk.original_chars, 2) if chunk.original_chars else 0.0
+        ratio = (
+            round(chunk.summary_chars / chunk.original_chars, 2) if chunk.original_chars else 0.0
+        )
         rows.append(
             {
                 "Chunk": chunk.chunk_number,
@@ -97,9 +99,7 @@ def render_result(result: SummaryResult, analysis: str | None, quotes: list[str]
                 heading += " ⚠️ failed"
             st.markdown(heading)
             st.write(chunk.summary)
-            st.caption(
-                f"{chunk.original_chars:,} chars → {chunk.summary_chars:,} chars"
-            )
+            st.caption(f"{chunk.original_chars:,} chars → {chunk.summary_chars:,} chars")
             st.divider()
 
     if analysis:

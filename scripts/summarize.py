@@ -88,11 +88,14 @@ def main(argv: list[str] | None = None) -> int:
 
     for chunk in result.chunk_summaries:
         mark = "ok  " if chunk.ok else "FAIL"
-        print(f"  [{mark}] chunk {chunk.chunk_number}: "
-              f"{chunk.original_chars:,} -> {chunk.summary_chars:,} chars")
+        print(
+            f"  [{mark}] chunk {chunk.chunk_number}: "
+            f"{chunk.original_chars:,} -> {chunk.summary_chars:,} chars"
+        )
 
-    print(f"\n=== {args.type.upper()} SUMMARY "
-          f"({result.succeeded}/{result.total_chunks} chunks) ===\n")
+    print(
+        f"\n=== {args.type.upper()} SUMMARY ({result.succeeded}/{result.total_chunks} chunks) ===\n"
+    )
     print(result.final_summary)
 
     if args.analysis:

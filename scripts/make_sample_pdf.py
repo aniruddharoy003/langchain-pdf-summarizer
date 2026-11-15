@@ -246,7 +246,8 @@ def build_pdf() -> bytes:
 
 
 def main(argv: list[str]) -> int:
-    target = Path(argv[1]) if len(argv) > 1 else Path(__file__).resolve().parents[1] / "tests" / "sample.pdf"
+    default = Path(__file__).resolve().parents[1] / "tests" / "sample.pdf"
+    target = Path(argv[1]) if len(argv) > 1 else default
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(build_pdf())
     print(f"wrote {target} ({target.stat().st_size:,} bytes)")

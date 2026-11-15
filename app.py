@@ -102,8 +102,7 @@ def run_pipeline(uploaded, options: dict) -> dict:
         text = processor.clean_text(processor.extract_text(uploaded))
         token_count = processor.count_tokens(text)
         st.write(
-            f"📖 {metadata.num_pages} page(s), {len(text):,} characters "
-            f"(~{token_count:,} tokens)"
+            f"📖 {metadata.num_pages} page(s), {len(text):,} characters (~{token_count:,} tokens)"
         )
 
         chunks = processor.chunk_text(text, options["max_tokens"])
@@ -122,9 +121,7 @@ def run_pipeline(uploaded, options: dict) -> dict:
         analysis = None
         if options["analysis"]:
             status.update(label="Analyzing document structure…")
-            outcome = summarizer.analyze_document(
-                processor.truncate(text, ANALYSIS_CHAR_LIMIT)
-            )
+            outcome = summarizer.analyze_document(processor.truncate(text, ANALYSIS_CHAR_LIMIT))
             if outcome.ok:
                 analysis = outcome.text
             else:
@@ -134,9 +131,7 @@ def run_pipeline(uploaded, options: dict) -> dict:
         if options["quotes"]:
             status.update(label="Extracting key quotes…")
             try:
-                quotes = summarizer.extract_quotes(
-                    processor.truncate(text, QUOTES_CHAR_LIMIT)
-                )
+                quotes = summarizer.extract_quotes(processor.truncate(text, QUOTES_CHAR_LIMIT))
             except Exception:  # noqa: BLE001 - quotes are a nice-to-have
                 st.warning("Quote extraction failed; continuing without it.")
 
@@ -210,10 +205,18 @@ def main() -> None:
         st.error(f"❌ {uploaded.name} is larger than the {MAX_UPLOAD_MB} MB limit.")
         return
 
-    # Results are keyed by file so downloads and reruns do not re-bill the API.
-    file_id = uploaded.file_id
-    if st.session_state.get("file_id") != file_id:
-        st.session_state.file_id = file_id
+    # Results are keyed by file *and* settings so a download click never re-bills
+    # the API, while changing any setting invalidates stale output.
+    signature = (
+        uploaded.file_id,
+        options["model"],
+        options["summary_type"],
+        options["max_tokens"],
+        options["analysis"],
+        options["quotes"],
+    )
+    if st.session_state.get("signature") != signature:
+        st.session_state.signature = signature
         st.session_state.pop("results", None)
 
     st.success(f"✅ {uploaded.name} ({uploaded.size / 1024:.0f} KB)")
@@ -229,7 +232,7 @@ def main() -> None:
         st.session_state.pop("results", None)
         try:
             state = run_pipeline(uploaded, options)
-        except PDFError as exc:
+        except (PDFError, SummarizerError) as exc:
             st.error(f"❌ {exc}")
             return
         except Exception as exc:  # noqa: BLE001 - keep the UI alive

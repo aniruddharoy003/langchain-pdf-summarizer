@@ -40,9 +40,7 @@ def test_truncate_respects_token_budget(processor: PDFProcessor) -> None:
 # -- chunking ---------------------------------------------------------------
 @pytest.mark.parametrize("max_tokens", [50, 200, 800])
 def test_chunks_never_exceed_budget(processor: PDFProcessor, max_tokens: int) -> None:
-    text = processor.clean_text(
-        "This is a sentence about summarization. " * 200
-    )
+    text = processor.clean_text("This is a sentence about summarization. " * 200)
     chunks = processor.chunk_text(text, max_tokens)
     assert len(chunks) > 1
     for chunk in chunks:

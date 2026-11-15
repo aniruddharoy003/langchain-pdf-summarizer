@@ -87,8 +87,12 @@ def message_text(message: BaseMessage) -> str:
             if isinstance(block, str):
                 parts.append(block)
                 continue
-            block_type = block.get("type") if isinstance(block, dict) else getattr(block, "type", None)
-            block_text = block.get("text") if isinstance(block, dict) else getattr(block, "text", None)
+            block_type = (
+                block.get("type") if isinstance(block, dict) else getattr(block, "type", None)
+            )
+            block_text = (
+                block.get("text") if isinstance(block, dict) else getattr(block, "text", None)
+            )
             if block_type == "text" and isinstance(block_text, str):
                 parts.append(block_text)
         return "\n".join(part for part in parts if part).strip()
@@ -127,9 +131,7 @@ class PDFSummarizer:
     # -- map ---------------------------------------------------------------
     def summarize_text(self, text: str, summary_type: str) -> str:
         """Summarize a single piece of text."""
-        return self._chunk_chain.invoke(
-            {"style": style_instruction(summary_type), "text": text}
-        )
+        return self._chunk_chain.invoke({"style": style_instruction(summary_type), "text": text})
 
     def summarize_chunks(self, chunks: list[str], summary_type: str) -> SummaryResult:
         """Summarize every chunk concurrently, then reduce to one summary."""
@@ -139,14 +141,17 @@ class PDFSummarizer:
 
         style = style_instruction(summary_type)
         payloads = [{"style": style, "text": chunk} for chunk in chunks]
-        outputs = self._chunk_chain.batch(
-            payloads,
-            config={"max_concurrency": MAX_CONCURRENCY},
-            return_exceptions=True,
-        )
+        try:
+            outputs = self._chunk_chain.batch(
+                payloads,
+                config={"max_concurrency": MAX_CONCURRENCY},
+                return_exceptions=True,
+            )
+        except Exception as exc:  # noqa: BLE001 - configuration/auth problems
+            raise SummarizerError(describe_error(exc)) from exc
 
         summaries: list[ChunkSummary] = []
-        for number, (chunk, output) in enumerate(zip(chunks, outputs), start=1):
+        for number, (chunk, output) in enumerate(zip(chunks, outputs, strict=True), start=1):
             ok = not isinstance(output, BaseException)
             if ok:
                 text = str(output).strip()
@@ -178,9 +183,7 @@ class PDFSummarizer:
         if len(usable) == 1:
             return usable[0]
 
-        sections = "\n\n".join(
-            f"Section {i}: {text}" for i, text in enumerate(usable, start=1)
-        )
+        sections = "\n\n".join(f"Section {i}: {text}" for i, text in enumerate(usable, start=1))
         try:
             return self._combine_chain.invoke(
                 {"style": style_instruction(summary_type), "summaries": sections}
@@ -213,3 +216,29 @@ def clean_quote_line(line: str) -> str:
 def _short(exc: object, limit: int = 200) -> str:
     text = str(exc).strip().replace("\n", " ")
     return text[:limit] + ("…" if len(text) > limit else "")
+
+
+def describe_error(exc: BaseException) -> str:
+    """Turn provider exceptions into one actionable sentence."""
+    raw = str(exc)
+    lowered = raw.lower()
+
+    if "429" in raw or "resource_exhausted" in lowered or "quota" in lowered:
+        return (
+            "Gemini rate limit or quota reached. Wait a minute and retry, use a "
+            "smaller document, or pick another model in the sidebar."
+        )
+    if (
+        any(token in lowered for token in ("api key", "permission denied", "unauthenticated"))
+        or "401" in raw
+        or "403" in raw
+    ):
+        return "Gemini rejected the API key. Check GEMINI_API_KEY in .env and restart."
+    if "timeout" in lowered or "deadline" in lowered:
+        return (
+            "Gemini did not respond in time. Retry, or lower 'Tokens per chunk' so "
+            "each request is smaller."
+        )
+    if "not found" in lowered or "404" in raw:
+        return f"The model is not available to this key. Choose a different model. ({_short(raw)})"
+    return _short(exc)
